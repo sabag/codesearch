@@ -1,0 +1,29 @@
+{
+
+  "fileExtensionsPattern":
+    ".*\\.(java|c|h|cpp|properties|xml|yaml|yml|json|html|css|js|go|txt|sql|sh|py|proto|md|jsp|jspf|csv)",
+
+  "searchDirectories": [
+    "$HOME/mysource"
+  ],
+
+  "skipDirectoriesPatterns": [
+    ".*/.git",
+    ".*/\\.idea",
+    ".*/target",
+    ".*/go/bin",
+    ".*/go/pkg"
+  ],
+
+  "skipFilePatterns": [
+    ".*\\.pyc",
+    ".*\\.class",
+    ".*/\\.exe",
+    ".*/\\.bin",
+    ".*/\\.obj"
+  ],
+
+  "displayLinesBefore": 5,
+  "displayLinesAfter": 6
+
+}

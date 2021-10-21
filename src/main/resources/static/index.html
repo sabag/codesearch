@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js"></script>
+
+
+  <script src="res/jquery.toaster.js"></script>
+
+
+
+  <title>Search Knowledge</title>
+
+  <style type="text/css">
+
+    .centered {
+      /*width: 90%;*/
+      align-content: center;
+      margin: auto;
+      padding: 10px;
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+
+    .spaced {
+      margin-top: 10px;
+      padding: 10px;
+    }
+
+    .bordered {
+      border: 1px solid gray;
+    }
+
+    .click-preview {
+      cursor: pointer;
+      padding: .5rem 1.25rem;
+    }
+
+  </style>
+
+  <script>
+
+      const entityMap = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': '&quot;',
+          "'": '&#39;',
+          "/": '&#x2F;'
+      };
+
+      let source;
+
+      $(function () {
+          $('#submitSearch').unbind().click(searchClick);
+          $('#fileContent').hide();
+          $('#results').hide();
+      });
+
+      $(window).on('beforeunload', function() {
+          if(typeof source === EventSource.prototype) {
+              source.close();
+          }
+      });
+
+      function escapeHtml(string) {
+          return String(string).replace(/[&<>"'\/]/g, function (s) {
+              return entityMap[s];
+          });
+      }
+
+      function createEventSource(term){
+          // close previous eventsource
+          if(typeof(source) !== "undefined") {
+              source.close();
+          }
+          source = new EventSource(`/search/${term}`);
+          $.toaster({ priority : 'info', message : "Search started..." });
+
+          source.addEventListener('message', onResultMessage, false);
+
+          source.addEventListener('open', function(e) {
+              console.log("events stream opened")
+          }, false);
+
+          source.addEventListener('error', function(e) {
+              if (e.readyState === EventSource.CLOSED) {
+                  console.log("event stream closed");
+              }
+              source.close();
+              // restore search button
+              $('#submitSearch').html("Search").removeClass("disabled").removeAttr("disabled");
+              $.toaster({ priority : 'danger', message : "Search got error" });
+          }, false);
+
+      }
+
+
+      function onResultMessage(e){
+          let message = JSON.parse(e.data);
+          if(message.file !== undefined) {
+              appendResult(message);
+          }
+
+          if(message.last){
+              console.log("no more events, close stream");
+              source.close();
+              // restore search button
+              $('#submitSearch').html("Search").removeClass("disabled").removeAttr("disabled");
+              $.toaster({ priority : 'info', message : "Search finished." });
+          }
+      }
+
+      function appendResult(message){
+          let display = message.file;
+          if(message.commonPath !== undefined) {
+              display = message.file.substring(message.commonPath.length);
+          }
+          const result = `<li class="list-group-item list-group-item-action click-preview" data-value="${message.file}">${display}</li>`;
+          let html = $.parseHTML(result);
+          $('#ul-results').append(html);
+          $('.click-preview').unbind().click(onFilePreviewClick);
+      }
+
+      function onFilePreviewClick(e) {
+          let filename = $(this).attr("data-value");
+          let term = $('#term').val();
+          $.ajax({
+              url: "/view",
+              headers: { 'Content-Type':'application/json' },
+              method: "POST",
+              data: `{"file": "${filename}", "searchTerm": "${term}" }`,
+              success: viewFileContent
+          });
+      }
+
+      function viewFileContent(response){
+          if(response.error != null) {
+              console.log("error on file fetch");
+              $.toaster({ priority : 'danger', title: 'Preview', message : response.error });
+              highlight("", response.error);
+              return;
+          }
+
+          // display file content in preview and highlight
+          let term = $('#term').val();
+          let sourceCode = escapeHtml(response.content);
+          highlight(term, sourceCode);
+      }
+
+      function searchClick(){
+
+          let term = $('#term').val();
+          if(term.length === 0) {
+              $.toaster({ priority : 'warning', message : "Search input is empty" });
+              return;
+          }
+
+          // empty the tree and empty the preview section
+          $("#results").empty().show();
+          $('#fileContent').show();
+          $('#fileContent pre code').html("");
+          $('#submitSearch').html("Searching...").addClass("disabled").attr("disabled", "true");
+
+          createEventSource(term);
+          return false;
+      }
+
+      function highlight(term, text) {
+          let regex = new RegExp(term, "g");
+          let highlighted = text.replaceAll(regex, "<span class='highlight'>"+term+"</span>");
+          $('#fileContent pre code').html(highlighted);
+      }
+
+  </script>
+</head>
+
+<body>
+
+<div class="searchBox centered shadow p-3 mb-5 bg-white rounded">
+  <form action="#" onsubmit="return false">
+    <div align="center">
+      <input type="text" class="form-control" placeholder="Search Term" size="100" id="term" name="term" value="">
+    </div>
+    <div align="center" style="padding-top: 10px;">
+      <label>
+        <button id="submitSearch" type="button" class="btn btn-primary" style="border-radius: 10px;">Search</button>
+      </label>
+    </div>
+  </form>
+</div>
+
+
+<div class="container">
+  <ul id="ul-results" class="list-group small"></ul>
+</div>
+
+<div id="fileContent" class="bordered shadow spaced" ><pre><code></code></pre></div>
+
+</body>
+</html>

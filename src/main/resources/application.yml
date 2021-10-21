@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8080}
+  address: 0.0.0.0
+  servlet:
+    context-path: /
+    application-display-name: ProjectSearch
+  tomcat:
+    min-spare-threads: 4
+    max-threads: 20
+
+logging:
+#  pattern:
+#    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr([%15.15t]){faint} %clr(%class){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}}"
+#    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    root: info
+    com.daniel: debug
+  file:
+    name: ${LOG_PATH:/tmp}/.mysearch/service.log
+
+
+com:
+  daniel:
+    user-config-file: .mysearch/config.json

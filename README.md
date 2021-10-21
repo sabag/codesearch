@@ -46,7 +46,7 @@ Notes:
 
 ### Install
 ```bash
-git clone git clone https://sabag@bitbucket.org/sabag/search.git
+git clone git clone https://github.com/sabag/codesearch.git
 cd search
 mvn clean install
 ./run.sh [PORT]
